@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>墨 SUMI - ink timing</title>
+<style>
+  :root {
+    --paper: #ece7dc;
+    --paper-deep: #e2dccd;
+    --ink: #1a1815;
+    --ink-soft: #3a3631;
+    --vermilion: #b23a2f;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body {
+    height: 100%;
+    background: var(--paper);
+    overflow: hidden;
+    font-family: 'Departure Mono', 'JetBrains Mono', ui-monospace, 'SF Mono', monospace;
+    color: var(--ink);
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+  }
+  #stage { position: fixed; inset: 0; touch-action: manipulation; }
+  canvas { display: block; width: 100%; height: 100%; }
+
+  /* HUD */
+  .hud {
+    position: fixed; top: 0; left: 0; right: 0;
+    display: flex; justify-content: space-between; align-items: flex-start;
+    padding: 22px 26px;
+    pointer-events: none;
+    z-index: 5;
+  }
+  .hud .block { display: flex; flex-direction: column; gap: 2px; }
+  .hud .label {
+    font-size: 11px; letter-spacing: 3px; text-transform: uppercase;
+    color: var(--ink-soft); opacity: 0.7;
+  }
+  .hud .value { font-size: 30px; line-height: 1; font-weight: 400; }
+  .hud .right { text-align: right; }
+  .combo { color: var(--vermilion); }
+
+  /* center seal / title */
+  .overlay {
+    position: fixed; inset: 0; z-index: 10;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 26px; text-align: center;
+    background: rgba(236,231,220,0.82);
+    backdrop-filter: blur(2px);
+    transition: opacity 0.5s ease;
+  }
+  .overlay.hidden { opacity: 0; pointer-events: none; }
+  .kanji {
+    font-size: clamp(80px, 22vw, 190px); line-height: 0.9;
+    font-weight: 400; letter-spacing: 4px;
+  }
+  .title-en {
+    font-size: 13px; letter-spacing: 8px; text-transform: uppercase;
+    color: var(--ink-soft);
+  }
+  .how {
+    font-size: 13px; letter-spacing: 1px; color: var(--ink-soft);
+    max-width: 280px; line-height: 1.7;
+  }
+  .seal {
+    margin-top: 4px;
+    width: 64px; height: 64px;
+    border: 2px solid var(--vermilion);
+    border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--vermilion); font-size: 26px;
+    cursor: pointer; pointer-events: auto;
+    transition: transform 0.18s ease, background 0.18s ease;
+  }
+  .seal:hover { transform: scale(1.06); background: rgba(178,58,47,0.08); }
+  .seal:active { transform: scale(0.94); }
+  .prompt { font-size: 12px; letter-spacing: 4px; text-transform: uppercase; color: var(--ink-soft); opacity: 0.6; }
+  .final { font-size: 15px; letter-spacing: 2px; color: var(--ink); }
+  .final b { color: var(--vermilion); font-size: 40px; display: block; margin-top: 6px; }
+</style>
+</head>
+<body>
+<div id="stage">
+  <canvas id="c"></canvas>
+</div>
+
+<div class="hud" aria-hidden="true">
+  <div class="block">
+    <span class="label">Score</span>
+    <span class="value" id="score">0</span>
+  </div>
+  <div class="block right">
+    <span class="label">Combo</span>
+    <span class="value combo" id="combo">×0</span>
+  </div>
+</div>
+
+<div class="overlay" id="overlay">
+  <div class="kanji">墨</div>
+  <div class="title-en">sumi · ink timing</div>
+  <div class="how" id="how">
+    Strokes fall toward the stone.<br>
+    Tap when a stroke meets the ring.<br>
+    Closer to center, cleaner the ink.
+  </div>
+  <div class="seal" id="start" role="button" tabindex="0" aria-label="Start">始</div>
+  <div class="prompt">tap the seal</div>
+</div>
+
+</body>
+</html>
