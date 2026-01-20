@@ -132,14 +132,32 @@
 
   // ---- game state ----
   const RING = () => Math.min(W, H) * 0.13;   // radius of the target ring
+  let strokes = [];      // incoming ink strokes
   let running = false;
   let score = 0, combo = 0, best = 0;
+  let spawnTimer = 0, spawnGap = 1500;
   let lastT = 0;
 
   function reset() {
-    score = 0; combo = 0;
+    strokes = [];
+    score = 0; combo = 0; spawnGap = 1500; spawnTimer = 0;
     scoreEl.textContent = '0';
     comboEl.textContent = '×0';
+  }
+
+  // a stroke travels from a random edge angle inward
+  function spawnStroke() {
+    const ring = RING();
+    const angle = Math.random() * Math.PI * 2;
+    const startDist = Math.max(W, H) * 0.62 + 80;
+    strokes.push({
+      angle,
+      dist: startDist,             // distance from center
+      speed: startDist / (spawnGap * 0.0011 + 900) * 16, // tuned below
+      hit: false,
+      width: 5 + Math.random() * 3,
+      seed: Math.random() * 1000,
+    });
   }
 
   function start() {
@@ -177,15 +195,61 @@
 
   }
 
+  function drawStroke(s) {
+    // an ink brush stroke pointing toward center, tapering
+    const x = cx + Math.cos(s.angle) * s.dist;
+    const y = cy + Math.sin(s.angle) * s.dist;
+    const len = 46;
+    const tx = cx + Math.cos(s.angle) * (s.dist - len);
+    const ty = cy + Math.sin(s.angle) * (s.dist - len);
+    ctx.save();
+    ctx.lineCap = 'round';
+    // shadow tail (lighter)
+    ctx.beginPath();
+    ctx.moveTo(x, y); ctx.lineTo(tx, ty);
+    ctx.strokeStyle = 'rgba(26,24,21,0.85)';
+    ctx.lineWidth = s.width;
+    ctx.stroke();
+    // head dot
+    ctx.beginPath();
+    ctx.arc(tx, ty, s.width * 0.75, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(26,24,21,0.9)';
+    ctx.fill();
+    ctx.restore();
+  }
+
   function loop(t) {
     if (!running) return;
     const dt = Math.min(t - lastT, 50);
     lastT = t;
 
+    // difficulty ramp
+    spawnGap = Math.max(620, 1500 - score * 0.12);
+    spawnTimer += dt;
+    if (spawnTimer >= spawnGap) {
+      spawnTimer = 0;
+      spawnStroke();
+    }
+
     ctx.clearRect(0, 0, W, H);
 
     // subtle paper vignette
     drawStone();
+
+    const ring = RING();
+    // update strokes
+    const baseSpeed = Math.min(W, H) * 0.00028; // px per ms relative
+    for (const s of strokes) {
+      if (!s.hit) {
+        s.dist -= (0.16 + score * 0.00002) * dt * (Math.min(W,H)/520);
+        if (s.dist <= ring * 0.18) {
+          s.hit = true;
+          combo = 0; comboEl.textContent = '×0';
+        }
+      }
+      if (!s.hit || s.dist > ring * 0.18) drawStroke(s);
+    }
+    strokes = strokes.filter(s => !s.hit && s.dist > 0);
 
     requestAnimationFrame(loop);
   }
