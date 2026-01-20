@@ -109,5 +109,87 @@
   <div class="prompt">tap the seal</div>
 </div>
 
+<script>
+(() => {
+  const canvas = document.getElementById('c');
+  const ctx = canvas.getContext('2d');
+  const overlay = document.getElementById('overlay');
+  const startBtn = document.getElementById('start');
+  const howEl = document.getElementById('how');
+  const scoreEl = document.getElementById('score');
+  const comboEl = document.getElementById('combo');
+
+  let W, H, cx, cy, DPR;
+  function resize() {
+    DPR = Math.min(window.devicePixelRatio || 1, 2);
+    W = window.innerWidth; H = window.innerHeight;
+    canvas.width = W * DPR; canvas.height = H * DPR;
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    cx = W / 2; cy = H / 2;
+  }
+  window.addEventListener('resize', resize);
+  resize();
+
+  // ---- game state ----
+  const RING = () => Math.min(W, H) * 0.13;   // radius of the target ring
+  let running = false;
+  let score = 0, combo = 0, best = 0;
+  let lastT = 0;
+
+  function reset() {
+    score = 0; combo = 0;
+    scoreEl.textContent = '0';
+    comboEl.textContent = '×0';
+  }
+
+  function start() {
+    reset();
+    overlay.classList.add('hidden');
+    running = true;
+    lastT = performance.now();
+    requestAnimationFrame(loop);
+  }
+
+
+  startBtn.addEventListener('click', (e) => { e.stopPropagation(); start(); });
+
+  // ---- render ----
+  function drawStone() {
+    const ring = RING();
+    // ink stone : soft filled disc with brush texture
+    ctx.save();
+    ctx.translate(cx, cy);
+    // outer faint ring (target)
+    ctx.beginPath();
+    ctx.arc(0, 0, ring, 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(26,24,21,0.28)';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    // inner stone
+    const g = ctx.createRadialGradient(-ring*0.2, -ring*0.2, ring*0.1, 0, 0, ring*0.7);
+    g.addColorStop(0, 'rgba(26,24,21,0.10)');
+    g.addColorStop(1, 'rgba(26,24,21,0.02)');
+    ctx.beginPath();
+    ctx.arc(0, 0, ring * 0.7, 0, Math.PI * 2);
+    ctx.fillStyle = g;
+    ctx.fill();
+    ctx.restore();
+
+  }
+
+  function loop(t) {
+    if (!running) return;
+    const dt = Math.min(t - lastT, 50);
+    lastT = t;
+
+    ctx.clearRect(0, 0, W, H);
+
+    // subtle paper vignette
+    drawStone();
+
+    requestAnimationFrame(loop);
+  }
+})();
+</script>
 </body>
 </html>
