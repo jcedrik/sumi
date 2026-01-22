@@ -133,13 +133,14 @@
   // ---- game state ----
   const RING = () => Math.min(W, H) * 0.13;   // radius of the target ring
   let strokes = [];      // incoming ink strokes
+  let ripples = [];      // ring feedback
   let running = false;
   let score = 0, combo = 0, best = 0;
   let spawnTimer = 0, spawnGap = 1500;
   let lastT = 0;
 
   function reset() {
-    strokes = [];
+    strokes = []; ripples = [];
     score = 0; combo = 0; spawnGap = 1500; spawnTimer = 0;
     scoreEl.textContent = '0';
     comboEl.textContent = '×0';
@@ -160,6 +161,39 @@
     });
   }
 
+  // judge a tap: find the stroke closest to the ring
+  function judge() {
+    if (!running) return;
+    const ring = RING();
+    let bestStroke = null, bestErr = Infinity;
+    for (const s of strokes) {
+      if (s.hit) continue;
+      const err = Math.abs(s.dist - ring);
+      if (err < bestErr) { bestErr = err; bestStroke = s; }
+    }
+    const tol = ring * 0.9; // only judge strokes reasonably near
+    if (!bestStroke || bestErr > tol) {
+      // tapped with nothing near, soft penalty to combo
+      combo = 0; comboEl.textContent = '×0';
+      ripples.push({ r: ring, a: 0.5, miss: true });
+      return;
+    }
+    bestStroke.hit = true;
+    // accuracy 0..1 (1 = perfect on the ring)
+    const acc = 1 - Math.min(bestErr / (ring * 0.75), 1);
+    let gain, quality;
+    if (acc > 0.85) { gain = 100; quality = 'perfect'; }
+    else if (acc > 0.55) { gain = 60; quality = 'good'; }
+    else { gain = 25; quality = 'ok'; }
+    combo++;
+    gain += combo * 5;
+    score += gain;
+    if (score > best) best = score;
+    scoreEl.textContent = score;
+    comboEl.textContent = '×' + combo;
+    ripples.push({ r: ring, a: 0.6, miss: false });
+  }
+
   function start() {
     reset();
     overlay.classList.add('hidden');
@@ -168,6 +202,13 @@
     requestAnimationFrame(loop);
   }
 
+  // ---- input ----
+  function onTap(e) {
+    if (!running) return;
+    e.preventDefault();
+    judge();
+  }
+  document.getElementById('stage').addEventListener('pointerdown', onTap);
 
   startBtn.addEventListener('click', (e) => { e.stopPropagation(); start(); });
 
@@ -218,6 +259,18 @@
     ctx.restore();
   }
 
+  function drawRipples() {
+    for (const r of ripples) {
+      ctx.beginPath();
+      ctx.arc(cx, cy, r.r, 0, Math.PI * 2);
+      ctx.strokeStyle = r.miss
+        ? `rgba(178,58,47,${r.a})`
+        : `rgba(26,24,21,${r.a})`;
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    }
+  }
+
   function loop(t) {
     if (!running) return;
     const dt = Math.min(t - lastT, 50);
@@ -250,6 +303,11 @@
       if (!s.hit || s.dist > ring * 0.18) drawStroke(s);
     }
     strokes = strokes.filter(s => !s.hit && s.dist > 0);
+
+    // update ripples
+    for (const r of ripples) { r.r += 3.4; r.a -= 0.03; }
+    ripples = ripples.filter(r => r.a > 0.02);
+    drawRipples();
 
     requestAnimationFrame(loop);
   }
