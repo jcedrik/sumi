@@ -139,10 +139,13 @@
   let score = 0, combo = 0, best = 0;
   let spawnTimer = 0, spawnGap = 1500;
   let lastT = 0;
+  let lives = 3;
+  let lifeMarks = 3;
 
   function reset() {
     strokes = []; splashes = []; ripples = [];
     score = 0; combo = 0; spawnGap = 1500; spawnTimer = 0;
+    lives = 3; lifeMarks = 3;
     scoreEl.textContent = '0';
     comboEl.textContent = '×0';
   }
@@ -222,6 +225,23 @@
     }
   }
 
+  function loseLife() {
+    lives--;
+    lifeMarks = lives;
+    combo = 0; comboEl.textContent = '×0';
+    ripples.push({ r: RING(), a: 0.7, miss: true });
+    if (lives <= 0) gameOver();
+  }
+
+  function gameOver() {
+    running = false;
+    overlay.classList.remove('hidden');
+    overlay.querySelector('.kanji').textContent = '終';
+    howEl.innerHTML = `<div class="final">final ink<b>${score}</b></div>`;
+    startBtn.textContent = '再';
+    overlay.querySelector('.prompt').textContent = 'tap to retry';
+  }
+
   function start() {
     reset();
     overlay.classList.add('hidden');
@@ -262,6 +282,13 @@
     ctx.fill();
     ctx.restore();
 
+    // lives as small ink dots under the stone
+    for (let i = 0; i < 3; i++) {
+      ctx.beginPath();
+      ctx.arc(cx - 16 + i * 16, cy + ring + 28, 4, 0, Math.PI * 2);
+      ctx.fillStyle = i < lifeMarks ? 'rgba(178,58,47,0.9)' : 'rgba(26,24,21,0.15)';
+      ctx.fill();
+    }
   }
 
   function drawStroke(s) {
@@ -334,7 +361,7 @@
         s.dist -= (0.16 + score * 0.00002) * dt * (Math.min(W,H)/520);
         if (s.dist <= ring * 0.18) {
           s.hit = true;
-          combo = 0; comboEl.textContent = '×0';
+          loseLife();
         }
       }
       if (!s.hit || s.dist > ring * 0.18) drawStroke(s);
