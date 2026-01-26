@@ -79,6 +79,9 @@
   .prompt { font-size: 12px; letter-spacing: 4px; text-transform: uppercase; color: var(--ink-soft); opacity: 0.6; }
   .final { font-size: 15px; letter-spacing: 2px; color: var(--ink); }
   .final b { color: var(--vermilion); font-size: 40px; display: block; margin-top: 6px; }
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition: none !important; }
+  }
 </style>
 </head>
 <body>
@@ -257,8 +260,14 @@
     judge();
   }
   document.getElementById('stage').addEventListener('pointerdown', onTap);
+  document.addEventListener('keydown', (e) => {
+    if (e.code === 'Space' && running) { e.preventDefault(); judge(); }
+  });
 
   startBtn.addEventListener('click', (e) => { e.stopPropagation(); start(); });
+  startBtn.addEventListener('keydown', (e) => {
+    if (e.code === 'Enter' || e.code === 'Space') { e.preventDefault(); start(); }
+  });
 
   // ---- render ----
   function drawStone() {
