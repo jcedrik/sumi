@@ -1,5 +1,7 @@
 # 墨 Sumi
 
+**Play it: [jcedrik.github.io/sumi](https://jcedrik.github.io/sumi/)**
+
 A small timing game I built around Japanese ink (sumi-e) aesthetics. Ink strokes fall toward a stone in the center, and you tap the moment a stroke hits the ring. The closer your timing, the cleaner the splash: a perfect hit lands as a tight blot, a late one sprays across the paper.
 
 I made it as a break from heavier projects, but I wanted it to actually look good and feel tight, not just be a generic canvas demo.
